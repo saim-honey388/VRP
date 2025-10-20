@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VRP Location Picker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    /* Prevent platform text auto-resize */
+    html, body { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    /* Keep panel fixed and decoupled from map transforms */
+    .panel { position: fixed; top: 10px; left: 10px; background: white; padding: 8px; z-index: 1000; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); width: 420px; box-sizing: border-box; }
+    .panel button { margin-right: 6px; }
+    /* Keep input/button font-size >=16px to avoid mobile auto-zoom */
+    .panel input, .panel button { font-size: 16px; }
+    .panel input { width: 360px; }
+    /* Avoid pinch/double-tap zoom changing control sizes */
+    .panel, .panel * { touch-action: manipulation; }
+    pre { max-height: 200px; overflow: auto; background: #f5f5f5; padding: 6px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="panel">
+    <div>
+      <button id="mode-factory">Set Factory</button>
+      <button id="mode-depot">Add Depot</button>
+      <button id="clear">Clear</button>
+      <button id="download">Download JSON</button>
+    </div>
+    <div>
+      <input id="region" placeholder="Type city/country (e.g., Lahore)" />
+      <button id="go">Go</button>
+    </div>
+    <div style="margin-top:6px">
+      <input id="lat" placeholder="Lat" style="width:120px" />
+      <input id="lon" placeholder="Lon" style="width:120px" />
+      <button id="place-coords">Place by coords</button>
+      <small>Left-click/place to preview, Right-click to confirm.</small>
+    </div>
+    <div><small>Click map: first set factory, then add depots.</small></div>
+    <pre id="out"></pre>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { scrollWheelZoom: true }).setView([25.1, 55.17], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20 }).addTo(map);
+
+    let mode = 'factory';
+    let factory = null;              // confirmed factory {lat,lon}
+    let depots = [];                 // confirmed depots [{id,name,lat,lon}]
+    let markers = [];                // confirmed Leaflet markers
+    let selectedMarker = null;       // currently selected confirmed marker
+    let pendingMarker = null;        // preview marker before right-click confirmation
+
+    function refreshOutput() {
+      const obj = { factory, depots };
+      document.getElementById('out').textContent = JSON.stringify(obj, null, 2);
+    }
+
+    function clearAll() {
+      factory = null; depots = [];
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      selectedMarker = null;
+      if (pendingMarker) { map.removeLayer(pendingMarker); pendingMarker = null; }
+      refreshOutput();
+    }
+
+    document.getElementById('mode-factory').onclick = () => { mode = 'factory'; };
+    document.getElementById('mode-depot').onclick = () => { mode = 'depot'; };
+    document.getElementById('clear').onclick = () => {
+      if (selectedMarker) {
+        // Remove only the selected confirmed marker and associated data
+        const title = selectedMarker.options && selectedMarker.options.title;
+        if (title === 'factory') {
+          factory = null;
+        } else {
+          depots = depots.filter(d => d.id !== title);
+        }
+        map.removeLayer(selectedMarker);
+        markers = markers.filter(m => m !== selectedMarker);
+        selectedMarker = null;
+        refreshOutput();
+      } else {
+        clearAll();
+      }
+    };
+    document.getElementById('download').onclick = () => {
+      const data = JSON.stringify({ factory, depots }, null, 2);
+      const blob = new Blob([data], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'locations.json'; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    document.getElementById('go').onclick = async () => {
+      const q = document.getElementById('region').value;
+      if (!q) return;
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const item = data[0];
+        const bbox = item.boundingbox.map(parseFloat); // [south, north, west, east]
+        const south = bbox[0], north = bbox[1], west = bbox[2], east = bbox[3];
+        const bounds = L.latLngBounds([south, west], [north, east]);
+        map.fitBounds(bounds);
+        // Choose a sensible zoom depending on region size
+        const width = Math.abs(east - west);
+        const height = Math.abs(north - south);
+        let zoom = 11;
+        const maxSpan = Math.max(width, height);
+        if (maxSpan > 10) zoom = 6; // country-scale
+        else if (maxSpan > 5) zoom = 7;
+        else if (maxSpan > 2) zoom = 9;
+        else if (maxSpan > 1) zoom = 11;
+        else if (maxSpan > 0.5) zoom = 12;
+        else zoom = 13; // city/neighborhoood
+        const centerLat = parseFloat(item.lat), centerLon = parseFloat(item.lon);
+        map.setView([centerLat, centerLon], zoom);
+        map.setMaxBounds(bounds.pad(0.1));
+        map.invalidateSize();
+        // Optional: visually show bbox
+        if (window._bbox) { map.removeLayer(window._bbox); }
+        window._bbox = L.rectangle(bounds, {color: '#ff7800', weight: 1, fillOpacity: 0.03}).addTo(map);
+      }
+    };
+
+    function placePending(lat, lon) {
+      if (pendingMarker) pendingMarker.setLatLng([lat, lon]);
+      else {
+        pendingMarker = L.marker([lat, lon], {title: 'pending', opacity: 0.6, draggable: true}).addTo(map).bindPopup('Pending');
+      }
+    }
+
+    function confirmPending(lat, lon) {
+      if (mode === 'factory') {
+        factory = { lat, lon };
+        // remove previous factory confirmed marker
+        markers.forEach(m => { if (m.options && m.options.title === 'factory') map.removeLayer(m); });
+        markers = markers.filter(m => !(m.options && m.options.title === 'factory'));
+        const m = L.marker([lat, lon], {title: 'factory'}).addTo(map).bindPopup('Factory');
+        m.on('click', () => { selectedMarker = m; });
+        markers.push(m);
+      } else {
+        const id = 'D' + (depots.length + 1);
+        depots.push({ id, name: 'Depot ' + (depots.length + 1), lat, lon });
+        const m = L.marker([lat, lon], {title: id}).addTo(map).bindPopup(id);
+        m.on('click', () => { selectedMarker = m; });
+        markers.push(m);
+      }
+      if (pendingMarker) { map.removeLayer(pendingMarker); pendingMarker = null; }
+      refreshOutput();
+    }
+
+    // Left-click: preview pending
+    map.on('click', function(e) {
+      const lat = e.latlng.lat; const lon = e.latlng.lng;
+      placePending(lat, lon);
+    });
+
+    // Right-click: confirm into the current field only
+    map.on('contextmenu', function(e) {
+      const lat = e.latlng.lat; const lon = e.latlng.lng;
+      if (pendingMarker) pendingMarker.setLatLng([lat, lon]);
+      confirmPending(lat, lon);
+    });
+
+    // Place by manual coordinates (preview); use right-click to confirm
+    document.getElementById('place-coords').onclick = () => {
+      const latStr = (document.getElementById('lat').value || '').trim();
+      const lonStr = (document.getElementById('lon').value || '').trim();
+      const lat = parseFloat(latStr), lon = parseFloat(lonStr);
+      if (!isFinite(lat) || !isFinite(lon)) return;
+      map.setView([lat, lon], 16);
+      placePending(lat, lon);
+    };
+
+    refreshOutput();
+  </script>
+</body>
+</html>

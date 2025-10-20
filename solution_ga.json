@@ -1,0 +1,65 @@
+{
+  "routes": [
+    {
+      "shift_id": "S1",
+      "vehicle_type_id": "MED",
+      "owned": true,
+      "seats": 70,
+      "passengers": 67,
+      "depot_ids": [
+        "D1"
+      ],
+      "legs": [
+        {
+          "from_node": "D1",
+          "to_node": "F",
+          "distance_km": 24.21421227689654,
+          "time_min": 48.42842455379308
+        }
+      ],
+      "arrival_time": "08:00",
+      "cost": 24.21421227689654
+    },
+    {
+      "shift_id": "S1",
+      "vehicle_type_id": "MED",
+      "owned": true,
+      "seats": 70,
+      "passengers": 53,
+      "depot_ids": [
+        "D1"
+      ],
+      "legs": [
+        {
+          "from_node": "D1",
+          "to_node": "F",
+          "distance_km": 24.21421227689654,
+          "time_min": 48.42842455379308
+        }
+      ],
+      "arrival_time": "08:00",
+      "cost": 24.21421227689654
+    },
+    {
+      "shift_id": "S1",
+      "vehicle_type_id": "MED",
+      "owned": true,
+      "seats": 70,
+      "passengers": 60,
+      "depot_ids": [
+        "D2"
+      ],
+      "legs": [
+        {
+          "from_node": "D2",
+          "to_node": "F",
+          "distance_km": 16.267922166581247,
+          "time_min": 32.535844333162494
+        }
+      ],
+      "arrival_time": "08:00",
+      "cost": 16.267922166581247
+    }
+  ],
+  "total_cost": 64.69634672037432
+}

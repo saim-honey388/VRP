@@ -1,0 +1,23 @@
+{
+  "depots": [
+    {"id": "D1", "name": "Depot 1", "lat": 25.276987, "lon": 55.296249, "demand_by_shift": {"S1": 120, "S2": 40}},
+    {"id": "D2", "name": "Depot 2", "lat": 25.204849, "lon": 55.270782, "demand_by_shift": {"S1": 60}}
+  ],
+  "factory": {"id": "F", "name": "Factory", "lat": 25.095147, "lon": 55.163849},
+  "shifts": [
+    {"id": "S1", "start_time": "08:00", "max_ride_minutes": 90},
+    {"id": "S2", "start_time": "20:00", "max_ride_minutes": 90}
+  ],
+  "vehicles": {
+    "owned": [
+      {"type_id": "LARGE", "capacity": 150, "cost_per_km": 1.2, "count": 2},
+      {"type_id": "MED", "capacity": 70, "cost_per_km": 1.0, "count": 1}
+    ],
+    "rented": [
+      {"type_id": "RENT_MED", "capacity": 70, "cost_per_km": 1.1, "fixed_rental_cost": 50.0},
+      {"type_id": "RENT_SMALL", "capacity": 40, "cost_per_km": 0.9, "fixed_rental_cost": 30.0}
+    ]
+  }
+}
+
+
