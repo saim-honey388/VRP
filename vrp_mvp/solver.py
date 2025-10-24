@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List, Tuple
 from datetime import datetime, timedelta
 
-from .models import Instance, Solution, Route, RouteLeg, VehicleTypeId
+from models import Instance, Solution, Route, RouteLeg, VehicleTypeId
 
 
 def _parse_time(hhmm: str) -> datetime:

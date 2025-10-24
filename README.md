@@ -38,15 +38,36 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Quick start
------------
+Web Application (Recommended)
+-----------------------------
+For the best user experience, use the modern web interface:
+
+```bash
+# Start the full development environment
+./start_dev.sh
+```
+
+This will start:
+- **Backend API**: http://localhost:8000 (FastAPI with optimization endpoints)
+- **Frontend App**: http://localhost:5173 (React with interactive maps and forms)
+
+The web app provides:
+- 🗺️ **Interactive Location Picker**: Click on maps to add depots, pickups, and delivery points
+- ⚙️ **Smart Configuration**: Dynamic forms with filters for vehicle types, time windows, and constraints
+- 🚀 **Live Optimization**: Real-time progress monitoring with detailed logs and results
+- 📊 **Rich Results**: Interactive route visualization, violation reports, and performance metrics
+
+Command Line Interface
+----------------------
+For direct CLI usage:
+
 1) Pick coordinates (factory + depots)
 ```bash
 python -m vrp_mvp.cli --make-picker locations_picker.html
 xdg-open locations_picker.html
 ```
 - Left‑click to preview, right‑click to confirm.
-- You can also type lat/lon and click “Place by coords”, then right‑click to confirm.
+- You can also type lat/lon and click "Place by coords", then right‑click to confirm.
 - Download to `locations.json` when done.
 
 2) Run GA solver

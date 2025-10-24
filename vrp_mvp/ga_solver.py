@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict
 from datetime import datetime
 
-from .models import Instance, Solution, Route, RouteLeg, RouteReport
-from .geo import haversine_km, travel_time_min
-from .osrm import osrm_route
+from models import Instance, Solution, Route, RouteLeg, RouteReport
+from geo import haversine_km, travel_time_min
+from osrm import osrm_route
 
 # Global OSRM cache to avoid repeated API calls
 _osrm_cache: Dict[tuple, Tuple[float, float, List]] = {}
@@ -241,7 +241,10 @@ def _seed_population(instance: Instance, pop_size: int) -> List[Chromosome]:
     chromos: List[Chromosome] = []
     shift = instance.shifts[0]
     
-    for _ in range(pop_size):
+    print(f"   Seeding {pop_size} chromosomes...", flush=True)
+    
+    for chromo_idx in range(pop_size):
+        print(f"   Creating chromosome {chromo_idx + 1}/{pop_size}...", flush=True)
         assignments: List[Tuple[int, int]] = []
         
         # Get all depots with demand
@@ -251,13 +254,21 @@ def _seed_population(instance: Instance, pop_size: int) -> List[Chromosome]:
             if demand > 0:
                 depots_with_demand.append((i, demand))
         
+        print(f"     Found {len(depots_with_demand)} depots with demand", flush=True)
+        
         # Create assignments that encourage multi-depot routing
         remaining_demand = {i: demand for i, demand in depots_with_demand}
         
         # Try to create efficient multi-depot assignments
-        while any(remaining_demand.values()):
+        iteration = 0
+        max_iterations = 100  # Safety check to prevent infinite loops
+        while any(remaining_demand.values()) and iteration < max_iterations:
+            iteration += 1
+            print(f"     Iteration {iteration}: remaining demand = {remaining_demand}", flush=True)
+            
             # Find the smallest remaining demand
             min_demand = min(remaining_demand.values())
+            print(f"     Min demand: {min_demand}", flush=True)
             
             # Find best vehicle type for this demand
             best_vehicle = None
@@ -351,16 +362,20 @@ def _mutate(ch: Chromosome, instance: Instance, rate: float = 0.2) -> None:
 
 
 def solve_ga(instance: Instance, pop_size: int = 20, generations: int = 60, mutation_rate: float = 0.2, use_osrm: bool = False, osrm_url: str | None = None) -> Solution:
-    print(f"🚀 Starting GA: pop_size={pop_size}, generations={generations}, use_osrm={use_osrm}")
+    print(f"🚀 Starting GA: pop_size={pop_size}, generations={generations}, use_osrm={use_osrm}", flush=True)
     
     # Clear OSRM cache at start of each run
     if use_osrm:
         clear_osrm_cache()
-        print("🧹 Cleared OSRM cache")
+        print("🧹 Cleared OSRM cache", flush=True)
     
-    print("📊 Seeding population...")
+    print("📊 Seeding population...", flush=True)
+    print(f"   Instance has {len(instance.depots)} depots", flush=True)
+    print(f"   Instance has {len(instance.vehicles.owned)} owned vehicle types", flush=True)
+    print(f"   Instance has {len(instance.vehicles.rented)} rented vehicle types", flush=True)
+    
     population = _seed_population(instance, pop_size)
-    print(f"✅ Created {len(population)} chromosomes")
+    print(f"✅ Created {len(population)} chromosomes", flush=True)
     
     best_sol: Solution | None = None
     best_cost = float("inf")

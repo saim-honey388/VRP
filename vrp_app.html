@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRP Optimizer - Professional Interface</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .nav button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: #f8f9fa;
+            color: #495057;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav button:hover {
+            background: #e9ecef;
+        }
+        
+        .nav button.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .page-header {
+            background: #f8f9fa;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .page-header h2 {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-content {
+            padding: 2rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 0.25rem;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .map-container {
+            height: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .list-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .list-item .info {
+            flex: 1;
+        }
+        
+        .list-item .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .badge-depot {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-pickup {
+            background: #007bff;
+            color: white;
+        }
+        
+        .badge-delivery {
+            background: #28a745;
+            color: white;
+        }
+        
+        .progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 20px;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #007bff, #28a745);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+        
+        .result-card h3 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚚 VRP Optimizer</h1>
+        <p>Professional Vehicle Routing Problem Solver</p>
+    </div>
+    
+    <nav class="nav">
+        <button class="nav-btn active" onclick="showPage('status')">📊 Status</button>
+        <button class="nav-btn" onclick="showPage('locations')">📍 Locations</button>
+        <button class="nav-btn" onclick="showPage('vehicles')">🚛 Vehicles</button>
+        <button class="nav-btn" onclick="showPage('optimize')">🚀 Optimize</button>
+        <button class="nav-btn" onclick="showPage('results')">📋 Results</button>
+    </nav>
+    
+    <div class="container">
+        <!-- Status Page -->
+        <div id="status-page" class="page active">
+            <div class="page-header">
+                <h2>📊 System Status</h2>
+                <p>Check API connectivity and system health</p>
+            </div>
+            <div class="page-content">
+                <div class="status-card" id="api-status">
+                    <h3>API Status</h3>
+                    <p>Click the button below to check API connectivity</p>
+                    <button class="btn btn-primary" onclick="checkAPIStatus()">Check API Status</button>
+                </div>
+                
+                <div class="status-card" id="data-status">
+                    <h3>Data Summary</h3>
+                    <div id="data-summary">
+                        <p>Locations: <span id="location-count">0</span></p>
+                        <p>Vehicles: <span id="vehicle-count">0</span></p>
+                        <p>Total Capacity: <span id="total-capacity">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Locations Page -->
+        <div id="locations-page" class="page">
+            <div class="page-header">
+                <h2>📍 Location Management</h2>
+                <p>Add and manage depots, pickup points, and delivery locations</p>
+            </div>
+            <div class="page-content">
+                <div class="grid">
+                    <div>
+                        <h3>Add New Location</h3>
+                        <div class="form-group">
+                            <label>Location Name:</label>
+                            <input type="text" id="locationName" placeholder="e.g., Central Depot">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitude:</label>
+                            <input type="number" id="latitude" placeholder="40.7128" step="0.0001">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude:</label>
+                            <input type="number" id="longitude" placeholder="-74.0060" step="0.0001">
+                        </div>
+                        <div class="form-group">
+                            <label>Type:</label>
+                            <select id="locationType">
+                                <option value="depot">🏢 Depot</option>
+                                <option value="pickup">📦 Pickup Point</option>
+                                <option value="delivery">🚚 Delivery Point</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Demand:</label>
+                            <input type="number" id="demand" placeholder="10" min="1">
+                        </div>
+                        <button class="btn btn-primary" onclick="addLocation()">Add Location</button>
+                        <button class="btn btn-secondary" onclick="clearLocations()">Clear All</button>
+                    </div>
+                    <div>
+                        <h3>Map View</h3>
+                        <div id="map" class="map-container"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Added Locations</h3>
+                    <div id="locations-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Vehicles Page -->
+        <div id="vehicles-page" class="page">
+            <div class="page-header">
+                <h2>🚛 Vehicle Fleet Management</h2>
+                <p>Configure your vehicle fleet with capacities and costs</p>
+            </div>
+            <div class="page-content">
+                <div class="grid">
+                    <div>
+                        <h3>Add New Vehicle</h3>
+                        <div class="form-group">
+                            <label>Vehicle Name:</label>
+                            <input type="text" id="vehicleName" placeholder="e.g., Small Van">
+                        </div>
+                        <div class="form-group">
+                            <label>Capacity:</label>
+                            <input type="number" id="vehicleCapacity" placeholder="20" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Cost per KM ($):</label>
+                            <input type="number" id="costPerKm" placeholder="0.5" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Cost per Hour ($):</label>
+                            <input type="number" id="costPerHour" placeholder="15" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Count:</label>
+                            <input type="number" id="vehicleCount" placeholder="2" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Type:</label>
+                            <select id="vehicleType">
+                                <option value="owned">🏠 Owned</option>
+                                <option value="rented">🏢 Rented</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="addVehicle()">Add Vehicle</button>
+                        <button class="btn btn-secondary" onclick="clearVehicles()">Clear All</button>
+                    </div>
+                    <div>
+                        <h3>Fleet Summary</h3>
+                        <div id="fleet-summary">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-vehicles">0</div>
+                                <div class="stat-label">Total Vehicles</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-capacity-fleet">0</div>
+                                <div class="stat-label">Total Capacity</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3>Vehicle Fleet</h3>
+                    <div id="vehicles-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Optimize Page -->
+        <div id="optimize-page" class="page">
+            <div class="page-header">
+                <h2>🚀 Run Optimization</h2>
+                <p>Execute the VRP optimization algorithm</p>
+            </div>
+            <div class="page-content">
+                <div class="grid">
+                    <div>
+                        <h3>Optimization Settings</h3>
+                        <div class="form-group">
+                            <label>Algorithm:</label>
+                            <select id="algorithm">
+                                <option value="genetic">Genetic Algorithm</option>
+                                <option value="greedy">Greedy Heuristic</option>
+                                <option value="simulated_annealing">Simulated Annealing</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Max Time (minutes):</label>
+                            <input type="number" id="maxTime" value="480" min="60" max="1440">
+                        </div>
+                        <div class="form-group">
+                            <label>Population Size (GA only):</label>
+                            <input type="number" id="populationSize" value="50" min="10" max="200">
+                        </div>
+                        <div class="form-group">
+                            <label>Generations (GA only):</label>
+                            <input type="number" id="generations" value="100" min="10" max="500">
+                        </div>
+                        <button class="btn btn-success" onclick="runOptimization()">Run Optimization</button>
+                    </div>
+                    <div>
+                        <h3>Progress</h3>
+                        <div id="optimization-progress" class="hidden">
+                            <div class="progress">
+                                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <p id="progress-text">Initializing...</p>
+                        </div>
+                        <div id="optimization-status">
+                            <p>Ready to run optimization</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Page -->
+        <div id="results-page" class="page">
+            <div class="page-header">
+                <h2>📋 Optimization Results</h2>
+                <p>View and analyze optimization results</p>
+            </div>
+            <div class="page-content">
+                <div id="results-content">
+                    <p>No results available. Run optimization first.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let locations = [];
+        let vehicles = [];
+        let map;
+        let markers = [];
+        let optimizationResults = null;
+
+        // Initialize the application
+        function init() {
+            initializeMap();
+            updateDataSummary();
+            checkAPIStatus();
+        }
+
+        // Navigation functions
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId + '-page').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Update data summary when switching to status page
+            if (pageId === 'status') {
+                updateDataSummary();
+            }
+        }
+
+        // API Status functions
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/');
+                const data = await response.json();
+                
+                document.getElementById('api-status').innerHTML = `
+                    <h3>API Status</h3>
+                    <div class="status-success">
+                        <p>✅ API is running!</p>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        <p><strong>VRP Solver:</strong> ${data.vrp_solver_available ? 'Available' : 'Not Available'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = `
+                    <h3>API Status</h3>
+                    <div class="status-error">
+                        <p>❌ API Error: ${error.message}</p>
+                        <p>Make sure the backend is running on port 8000</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Map functions
+        function initializeMap() {
+            if (document.getElementById('map')) {
+                map = L.map('map').setView([40.7128, -74.0060], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            }
+        }
+
+        function addLocationToMap(location) {
+            if (map) {
+                const marker = L.marker([location.lat, location.lng]).addTo(map);
+                marker.bindPopup(`
+                    <strong>${location.name}</strong><br>
+                    Type: ${location.type}<br>
+                    Demand: ${location.demand}
+                `);
+                markers.push(marker);
+            }
+        }
+
+        function updateMapBounds() {
+            if (map && locations.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Location management
+        function addLocation() {
+            const name = document.getElementById('locationName').value;
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            const type = document.getElementById('locationType').value;
+            const demand = parseInt(document.getElementById('demand').value);
+
+            if (!name || isNaN(lat) || isNaN(lng) || isNaN(demand)) {
+                alert('Please fill in all fields with valid values');
+                return;
+            }
+
+            const location = {
+                id: Date.now().toString(),
+                name: name,
+                lat: lat,
+                lng: lng,
+                type: type,
+                demand: demand
+            };
+
+            locations.push(location);
+            addLocationToMap(location);
+            updateLocationsList();
+            updateMapBounds();
+            updateDataSummary();
+
+            // Clear form
+            document.getElementById('locationName').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('demand').value = '';
+        }
+
+        function updateLocationsList() {
+            const list = document.getElementById('locations-list');
+            if (locations.length === 0) {
+                list.innerHTML = '<p>No locations added yet.</p>';
+                return;
+            }
+
+            list.innerHTML = locations.map((loc, index) => `
+                <div class="list-item">
+                    <div class="info">
+                        <strong>${loc.name}</strong> (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})
+                        <br>
+                        <span class="badge badge-${loc.type}">${loc.type}</span> - Demand: ${loc.demand}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="removeLocation(${index})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeLocation(index) {
+            locations.splice(index, 1);
+            if (markers[index]) {
+                map.removeLayer(markers[index]);
+                markers.splice(index, 1);
+            }
+            updateLocationsList();
+            updateMapBounds();
+            updateDataSummary();
+        }
+
+        function clearLocations() {
+            if (confirm('Are you sure you want to clear all locations?')) {
+                locations = [];
+                markers.forEach(marker => map.removeLayer(marker));
+                markers = [];
+                updateLocationsList();
+                updateDataSummary();
+            }
+        }
+
+        // Vehicle management
+        function addVehicle() {
+            const name = document.getElementById('vehicleName').value;
+            const capacity = parseInt(document.getElementById('vehicleCapacity').value);
+            const costPerKm = parseFloat(document.getElementById('costPerKm').value);
+            const costPerHour = parseFloat(document.getElementById('costPerHour').value);
+            const count = parseInt(document.getElementById('vehicleCount').value);
+            const type = document.getElementById('vehicleType').value;
+
+            if (!name || isNaN(capacity) || isNaN(costPerKm) || isNaN(costPerHour) || isNaN(count)) {
+                alert('Please fill in all fields with valid values');
+                return;
+            }
+
+            const vehicle = {
+                id: Date.now().toString(),
+                name: name,
+                capacity: capacity,
+                costPerKm: costPerKm,
+                costPerHour: costPerHour,
+                count: count,
+                type: type
+            };
+
+            vehicles.push(vehicle);
+            updateVehiclesList();
+            updateDataSummary();
+
+            // Clear form
+            document.getElementById('vehicleName').value = '';
+            document.getElementById('vehicleCapacity').value = '';
+            document.getElementById('costPerKm').value = '';
+            document.getElementById('costPerHour').value = '';
+            document.getElementById('vehicleCount').value = '';
+        }
+
+        function updateVehiclesList() {
+            const list = document.getElementById('vehicles-list');
+            if (vehicles.length === 0) {
+                list.innerHTML = '<p>No vehicles added yet.</p>';
+                return;
+            }
+
+            list.innerHTML = vehicles.map((veh, index) => `
+                <div class="list-item">
+                    <div class="info">
+                        <strong>${veh.name}</strong> - Capacity: ${veh.capacity} - Count: ${veh.count}
+                        <br>
+                        Cost: $${veh.costPerKm}/km, $${veh.costPerHour}/hr - ${veh.type}
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="removeVehicle(${index})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update fleet summary
+            const totalVehicles = vehicles.reduce((sum, v) => sum + v.count, 0);
+            const totalCapacity = vehicles.reduce((sum, v) => sum + (v.capacity * v.count), 0);
+            
+            document.getElementById('total-vehicles').textContent = totalVehicles;
+            document.getElementById('total-capacity-fleet').textContent = totalCapacity;
+        }
+
+        function removeVehicle(index) {
+            vehicles.splice(index, 1);
+            updateVehiclesList();
+            updateDataSummary();
+        }
+
+        function clearVehicles() {
+            if (confirm('Are you sure you want to clear all vehicles?')) {
+                vehicles = [];
+                updateVehiclesList();
+                updateDataSummary();
+            }
+        }
+
+        // Optimization functions
+        async function runOptimization() {
+            if (locations.length === 0) {
+                alert('Please add at least one location first!');
+                return;
+            }
+
+            if (vehicles.length === 0) {
+                alert('Please add at least one vehicle first!');
+                return;
+            }
+
+            const optimizationData = {
+                locations: locations,
+                vehicles: vehicles,
+                settings: {
+                    maxTime: parseInt(document.getElementById('maxTime').value),
+                    algorithm: document.getElementById('algorithm').value,
+                    populationSize: parseInt(document.getElementById('populationSize').value),
+                    generations: parseInt(document.getElementById('generations').value)
+                }
+            };
+
+            // Show progress
+            document.getElementById('optimization-progress').classList.remove('hidden');
+            document.getElementById('optimization-status').innerHTML = '<p>Running optimization...</p>';
+
+            // Simulate progress
+            const steps = [
+                { progress: 20, text: 'Loading locations and vehicles...' },
+                { progress: 40, text: 'Calculating distances...' },
+                { progress: 60, text: 'Running optimization algorithm...' },
+                { progress: 80, text: 'Optimizing routes...' },
+                { progress: 100, text: 'Optimization completed!' }
+            ];
+
+            for (const step of steps) {
+                document.getElementById('progress-bar').style.width = step.progress + '%';
+                document.getElementById('progress-text').textContent = step.text;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(optimizationData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                optimizationResults = data;
+                displayResults(data);
+                
+                document.getElementById('optimization-status').innerHTML = '<p class="status-success">✅ Optimization completed successfully!</p>';
+            } catch (error) {
+                document.getElementById('optimization-status').innerHTML = `
+                    <p class="status-error">❌ Optimization Error: ${error.message}</p>
+                    <p>Make sure the backend API is running and accessible.</p>
+                `;
+            }
+
+            document.getElementById('optimization-progress').classList.add('hidden');
+        }
+
+        function displayResults(results) {
+            const resultsContent = document.getElementById('results-content');
+            
+            if (!results || !results.routes) {
+                resultsContent.innerHTML = '<p>No results available.</p>';
+                return;
+            }
+
+            const totalCost = results.routes.reduce((sum, route) => sum + (route.cost || 0), 0);
+            const totalTime = results.routes.reduce((sum, route) => sum + (route.time || 0), 0);
+            const totalDistance = results.routes.reduce((sum, route) => sum + (route.distance || 0), 0);
+
+            resultsContent.innerHTML = `
+                <div class="result-card">
+                    <h3>Optimization Results</h3>
+                    <div class="result-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">$${totalCost.toFixed(2)}</div>
+                            <div class="stat-label">Total Cost</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${totalTime} min</div>
+                            <div class="stat-label">Total Time</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${totalDistance.toFixed(1)} km</div>
+                            <div class="stat-label">Total Distance</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${results.routes.length}</div>
+                            <div class="stat-label">Routes</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Route Details</h3>
+                    ${results.routes.map((route, index) => `
+                        <div class="list-item">
+                            <div class="info">
+                                <strong>Route ${index + 1}</strong> - ${route.vehicle || 'Vehicle'}
+                                <br>
+                                Passengers: ${route.passengers || 0} | Distance: ${(route.distance || 0).toFixed(1)} km | Time: ${route.time || 0} min | Cost: $${(route.cost || 0).toFixed(2)}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="result-card">
+                    <h3>Raw Results</h3>
+                    <pre>${JSON.stringify(results, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        // Data summary functions
+        function updateDataSummary() {
+            document.getElementById('location-count').textContent = locations.length;
+            document.getElementById('vehicle-count').textContent = vehicles.reduce((sum, v) => sum + v.count, 0);
+            document.getElementById('total-capacity').textContent = vehicles.reduce((sum, v) => sum + (v.capacity * v.count), 0);
+        }
+
+        // Initialize the application when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>

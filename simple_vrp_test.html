@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRP Optimizer - Simple Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #007bff; text-align: center; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin: 10px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚚 VRP Optimizer - Simple Test Interface</h1>
+        
+        <div class="section">
+            <h2>📊 API Status</h2>
+            <button onclick="checkAPIStatus()">Check API Status</button>
+            <div id="api-status"></div>
+        </div>
+
+        <div class="grid">
+            <div class="section">
+                <h2>📍 Add Locations</h2>
+                <div class="form-group">
+                    <label>Location Name:</label>
+                    <input type="text" id="locationName" placeholder="e.g., Depot 1" value="Depot 1">
+                </div>
+                <div class="form-group">
+                    <label>Latitude:</label>
+                    <input type="number" id="latitude" placeholder="40.7128" value="40.7128" step="0.0001">
+                </div>
+                <div class="form-group">
+                    <label>Longitude:</label>
+                    <input type="number" id="longitude" placeholder="-74.0060" value="-74.0060" step="0.0001">
+                </div>
+                <div class="form-group">
+                    <label>Type:</label>
+                    <select id="locationType">
+                        <option value="depot">Depot</option>
+                        <option value="pickup">Pickup Point</option>
+                        <option value="delivery">Delivery Point</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Demand:</label>
+                    <input type="number" id="demand" placeholder="10" value="10" min="1">
+                </div>
+                <button onclick="addLocation()">Add Location</button>
+                <div id="locations-list"></div>
+            </div>
+
+            <div class="section">
+                <h2>🚛 Vehicle Configuration</h2>
+                <div class="form-group">
+                    <label>Vehicle Name:</label>
+                    <input type="text" id="vehicleName" placeholder="Small Van" value="Small Van">
+                </div>
+                <div class="form-group">
+                    <label>Capacity:</label>
+                    <input type="number" id="vehicleCapacity" placeholder="20" value="20" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Cost per KM:</label>
+                    <input type="number" id="costPerKm" placeholder="0.5" value="0.5" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Count:</label>
+                    <input type="number" id="vehicleCount" placeholder="2" value="2" min="1">
+                </div>
+                <button onclick="addVehicle()">Add Vehicle</button>
+                <div id="vehicles-list"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Run Optimization</h2>
+            <button onclick="runOptimization()">Run VRP Optimization</button>
+            <div id="optimization-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>📋 Current Data</h2>
+            <button onclick="showCurrentData()">Show Current Data</button>
+            <div id="current-data"></div>
+        </div>
+    </div>
+
+    <script>
+        let locations = [];
+        let vehicles = [];
+
+        function checkAPIStatus() {
+            fetch('http://localhost:8000/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('api-status').innerHTML = 
+                        '<p class="success">✅ API is running!</p>' +
+                        '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    document.getElementById('api-status').innerHTML = 
+                        '<p class="error">❌ API Error: ' + error.message + '</p>';
+                });
+        }
+
+        function addLocation() {
+            const location = {
+                name: document.getElementById('locationName').value,
+                lat: parseFloat(document.getElementById('latitude').value),
+                lng: parseFloat(document.getElementById('longitude').value),
+                type: document.getElementById('locationType').value,
+                demand: parseInt(document.getElementById('demand').value)
+            };
+            
+            locations.push(location);
+            updateLocationsList();
+            
+            // Clear form
+            document.getElementById('locationName').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('demand').value = '10';
+        }
+
+        function addVehicle() {
+            const vehicle = {
+                name: document.getElementById('vehicleName').value,
+                capacity: parseInt(document.getElementById('vehicleCapacity').value),
+                costPerKm: parseFloat(document.getElementById('costPerKm').value),
+                count: parseInt(document.getElementById('vehicleCount').value)
+            };
+            
+            vehicles.push(vehicle);
+            updateVehiclesList();
+            
+            // Clear form
+            document.getElementById('vehicleName').value = '';
+            document.getElementById('vehicleCapacity').value = '';
+            document.getElementById('costPerKm').value = '';
+            document.getElementById('vehicleCount').value = '';
+        }
+
+        function updateLocationsList() {
+            const list = document.getElementById('locations-list');
+            list.innerHTML = '<h3>Added Locations:</h3>';
+            locations.forEach((loc, index) => {
+                list.innerHTML += `<p>${index + 1}. ${loc.name} (${loc.lat}, ${loc.lng}) - ${loc.type} - Demand: ${loc.demand}</p>`;
+            });
+        }
+
+        function updateVehiclesList() {
+            const list = document.getElementById('vehicles-list');
+            list.innerHTML = '<h3>Added Vehicles:</h3>';
+            vehicles.forEach((veh, index) => {
+                list.innerHTML += `<p>${index + 1}. ${veh.name} - Capacity: ${veh.capacity} - Cost/KM: $${veh.costPerKm} - Count: ${veh.count}</p>`;
+            });
+        }
+
+        function runOptimization() {
+            if (locations.length === 0) {
+                document.getElementById('optimization-result').innerHTML = 
+                    '<p class="error">❌ Please add at least one location first!</p>';
+                return;
+            }
+
+            if (vehicles.length === 0) {
+                document.getElementById('optimization-result').innerHTML = 
+                    '<p class="error">❌ Please add at least one vehicle first!</p>';
+                return;
+            }
+
+            const optimizationData = {
+                locations: locations,
+                vehicles: vehicles,
+                settings: {
+                    maxTime: 480,
+                    algorithm: 'genetic',
+                    populationSize: 50,
+                    generations: 100
+                }
+            };
+
+            document.getElementById('optimization-result').innerHTML = 
+                '<p>🔄 Running optimization...</p>';
+
+            fetch('http://localhost:8000/optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(optimizationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('optimization-result').innerHTML = 
+                    '<p class="success">✅ Optimization completed!</p>' +
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                document.getElementById('optimization-result').innerHTML = 
+                    '<p class="error">❌ Optimization Error: ' + error.message + '</p>';
+            });
+        }
+
+        function showCurrentData() {
+            const data = {
+                locations: locations,
+                vehicles: vehicles,
+                totalLocations: locations.length,
+                totalVehicles: vehicles.reduce((sum, v) => sum + v.count, 0)
+            };
+            
+            document.getElementById('current-data').innerHTML = 
+                '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+
+        // Auto-check API status on page load
+        window.onload = function() {
+            checkAPIStatus();
+        };
+    </script>
+</body>
+</html>
